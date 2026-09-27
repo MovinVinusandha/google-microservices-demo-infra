@@ -33,39 +33,3 @@ resource "aws_iam_role" "github_actions" {
     ]
   })
 }
-
-resource "aws_iam_policy" "github_ecr_push" {
-  name        = "${var.cluster_name}-github-ecr-push"
-  description = "Allows GitHub Actions to push Docker images to ECR"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "ecr:GetAuthorizationToken"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "ecr:PutImage",
-          "ecr:InitiateLayerUpload",
-          "ecr:UploadLayerPart",
-          "ecr:CompleteLayerUpload"
-        ]
-        Resource = aws_ecr_repository.app.arn
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "github_ecr" {
-  role       = aws_iam_role.github_actions.name
-  policy_arn = aws_iam_policy.github_ecr_push.arn
-}

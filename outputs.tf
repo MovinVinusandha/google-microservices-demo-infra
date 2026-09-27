@@ -30,11 +30,6 @@ output "acm_certificate_arn" {
   value       = aws_acm_certificate.cert.arn
 }
 
-output "ecr_repository_url" {
-  description = "URL of the Amazon ECR repository"
-  value       = aws_ecr_repository.app.repository_url
-}
-
 output "github_actions_role_arn" {
   description = "IAM Role ARN to configure in GitHub Actions (role-to-assume)"
   value       = aws_iam_role.github_actions.arn

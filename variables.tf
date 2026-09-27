@@ -91,19 +91,7 @@ variable "domain_name" {
   default     = "example.me"
 }
 
-# CI/CD & ECR
-variable "ecr_repository_name" {
-  description = "Name of the Amazon ECR repository for container images."
-  type        = string
-  default     = "my-app"
-}
-
-variable "ecr_image_retention_count" {
-  description = "Maximum number of container images to keep in ECR before expiring."
-  type        = number
-  default     = 30
-}
-
+# CI/CD
 variable "github_repository" {
   description = "The GitHub repository allowed to assume the OIDC role (format: 'owner/repo' or 'owner/*')."
   type        = string
