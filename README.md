@@ -6,7 +6,7 @@
 [![GitOps](https://img.shields.io/badge/GitOps-ArgoCD-F46800?logo=argo&logoColor=white)](https://argoproj.github.io/cd/)
 [![Security](https://img.shields.io/badge/Security-CIS%20Hardened-green?logo=shield)](https://aws.amazon.com/)
 
-An enterprise-ready, fully private Amazon EKS deployment engineered with **EKS Auto Mode**, **Zero-Inbound Bastion access via AWS SSM**, **GitOps delivery (ArgoCD)**, **EKS Pod Identity**, and **automated storage provisioning (AWS EBS CSI Driver)**.
+An enterprise-ready, fully private Amazon EKS deployment engineered with **EKS Auto Mode**, **Zero-Inbound Bastion access via AWS SSM**, **GitOps delivery (ArgoCD)**, **EKS Pod Identity**, and **automated persistent storage provisioning (AWS EBS CSI Driver)**.
 
 This infrastructure is built entirely via Infrastructure as Code (Terraform) to back the production microservices application in [MovinVinusandha/google-microservices-demo](https://github.com/MovinVinusandha/google-microservices-demo).
 
