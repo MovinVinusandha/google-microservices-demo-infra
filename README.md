@@ -1,4 +1,4 @@
-# Enterprise-Grade AWS EKS Platform (Auto Mode & GitOps)
+# Enterprise-Grade AWS EKS Infrastructure Platform
 
 [![Terraform](https://img.shields.io/badge/Terraform-1.6+-844FBA?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-1.36-326CE5?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
@@ -6,37 +6,32 @@
 [![GitOps](https://img.shields.io/badge/GitOps-ArgoCD-F46800?logo=argo&logoColor=white)](https://argoproj.github.io/cd/)
 [![Security](https://img.shields.io/badge/Security-CIS%20Hardened-green?logo=shield)](https://aws.amazon.com/)
 
-An enterprise-ready, fully private Amazon EKS deployment engineered with **EKS Auto Mode**, **Zero-Inbound Bastion access via AWS SSM**, **GitOps delivery (ArgoCD)**, and **automated secrets synchronization**.
+An enterprise-ready, fully private Amazon EKS deployment engineered with **EKS Auto Mode**, **Zero-Inbound Bastion access via AWS SSM**, **GitOps delivery (ArgoCD)**, **EKS Pod Identity**, and **automated storage provisioning (AWS EBS CSI Driver)**.
 
-This infrastructure is built entirely via Infrastructure as Code (Terraform) following CIS AWS Foundations benchmarks.
+This infrastructure is built entirely via Infrastructure as Code (Terraform) to back the production microservices application in [MovinVinusandha/google-microservices-demo](https://github.com/MovinVinusandha/google-microservices-demo).
+
+---
 
 ## Architecture Diagram
 
 ![EKS Architecture](assets/architecture-diagram.png)
 
-## Key Engineering Decisions & Trade-Offs
+---
 
-| Decision | Alternative Considered | Why this choice for Production? |
+## Key Infrastructure Components
+
+| Component | Technology | Purpose |
 | :--- | :--- | :--- |
-| **EKS Auto Mode** | Managed Node Groups / Self-managed Karpenter | Drastically cuts operational toil: AWS handles node scaling, security patching, OS lifecycle, and VPC CNI/ALB drivers automatically. |
-| **100% Private API + SSM** | Public API with CIDR whitelist | Eliminates cluster internet exposure completely. Developers tunnel via authenticated IAM & SSM; zero open inbound ports (port 22 closed). |
-| **EKS Pod Identity** | Legacy IRSA (OIDC Thumbprints) | Modern AWS standard. Eliminates tedious OIDC thumbprint drift and manages workload IAM directly at the cluster layer. |
-| **External Secrets Operator** | Plain Kubernetes Secrets in Git | **Zero-Secret architecture.** Terraform builds the empty container in AWS Secrets Manager; credentials are never committed to Git or stored in `terraform.tfstate`. |
-| **Route 53 NS Delegation** | Static CNAME records | Allows seamless wildcard ACM certificate validation and native root/apex domain routing. |
+| **VPC & Networking** | AWS VPC (3 AZs, 3 NAT Gateways) | Fully private subnets with strict egress control |
+| **Compute Plane** | EKS Auto Mode on Kubernetes 1.36 | Automated worker scaling, OS patching, and ALB integration |
+| **Control Plane Security** | AWS KMS CMK Encryption | Envelope encryption for all Kubernetes Secrets |
+| **Identity & IAM** | AWS EKS Pod Identity | Modern credential injection for ExternalDNS, CloudWatch & EBS CSI |
+| **Persistent Storage** | AWS EBS CSI Driver Addon | Dynamic provisioning of gp3 EBS volumes for stateful workloads |
+| **DNS & Ingress** | Route 53 + AWS ACM Wildcard | Automated DNS records via ExternalDNS and SSL termination |
 
+---
 
-## Tech Stack & Core Features
-
-* **Cloud Foundation:** AWS VPC (3 AZs, `/20` subnets, 3 dedicated NAT Gateways, S3 Gateway Endpoint).
-* **Compute Plane:** EKS Auto Mode on Kubernetes 1.36 with dedicated `system` and `general-purpose` pools.
-* **Control Plane Security:** Dedicated AWS KMS Customer-Managed Key (CMK) envelope encryption for Kubernetes Secrets; 5 CloudWatch audit log streams.
-* **Traffic & DNS Routing:** AWS Application Load Balancer configured via Kubernetes Ingress + Route 53 automation with **ExternalDNS**.
-* **SSL/TLS Encryption:** Free AWS ACM wildcard certificates with automated HTTP (80) to HTTPS (443) redirection.
-* **GitOps Engine:** **ArgoCD** deployed internally over HTTPS (`argocd.movinvinusandha.me`), pulling from Git via NAT egress without inbound firewall holes.
-* **CI/CD Pipeline:** **GitHub Actions** with **Keyless OIDC Authentication** to push container images to private Amazon ECR repositories.
-* **Observability:** **Amazon CloudWatch Container Insights (ADOT)** streaming per-pod CPU/Memory saturation, OOMKilled diagnostics, and structured logs.
-
-## ⚡ Quick Start
+## ⚡ Deployment Instructions
 
 ### 1. Configure and Deploy Infrastructure
 1. Customize **`terraform.tfvars`** with your domain name and settings.
@@ -50,45 +45,21 @@ This infrastructure is built entirely via Infrastructure as Code (Terraform) fol
    # Step 2: Retrieve your 4 AWS Name Servers and update your registrar
    terraform output route53_name_servers
 
-   # Step 3: Deploy the complete infrastructure
+   # Step 3: Deploy the complete infrastructure (including EBS CSI driver)
    terraform apply
-  ```
+   ```
 
-**Example output:**
+### 2. Connect Securely (Zero Inbound Ports)
 
-```text
-Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
-Apply complete! Resources: <created> added, 0 changed, 0 destroyed.
-```
-
-The exact resource counts and Terraform output vary with the current state.
-
-### 2. Connect Securely (No Open Inbound Ports)
-
-Because the cluster has no public API endpoint, connect using two terminal windows:
+Connect using two terminal windows:
 
 #### Terminal 1: Open the SSM Tunnel
-
-Run the pre-configured connection command generated by Terraform:
-
 ```bash
 eval "$(terraform output -raw connect_script)"
 ```
+*Listens locally on `127.0.0.1:6443` via AWS Systems Manager Session Manager.*
 
-**Example output:**
-
-```text
-Starting session with SessionId: user-0123456789abcdef0
-Port 6443 opened for sessionId user-0123456789abcdef0.
-Waiting for connections...
-```
-
-Leave Terminal 1 open. It listens locally on `127.0.0.1:6443`.
-
-#### Terminal 2: Configure and Verify kubectl
-
-In a separate terminal window, route `kubectl` through the active SSM tunnel with TLS server-name validation:
-
+#### Terminal 2: Configure kubectl
 ```bash
 # 1. Fetch AWS cluster context
 aws eks update-kubeconfig --region us-east-1 --name prod-eks-cluster
@@ -105,9 +76,9 @@ kubectl config set-cluster $CONTEXT \
 kubectl get nodes
 ```
 
-**Example output:**
+---
 
-```text
-NAME                                STATUS   ROLES    AGE   VERSION
-ip-10-0-1-xxx.ec2.internal          Ready    <none>   10m   v1.36.x-eksbuild.x
-```
+## 🔗 Integrated Microservices Platform
+
+Once the infrastructure is up, the workloads and platform stacks are deployed from the application repository:
+👉 **[Microservices Application Repository & Deployment Guide](https://github.com/MovinVinusandha/google-microservices-demo)**

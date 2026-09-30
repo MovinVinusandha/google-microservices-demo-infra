@@ -41,6 +41,9 @@ Commands you can copy and run are shown in `bash` blocks. Blocks labeled **Examp
   * Managed **Amazon CloudWatch Observability Add-on** powered by AWS Distro for OpenTelemetry (ADOT).
   * Real-time Container Insights dashboards tracking per-pod CPU/Memory saturation, OOMKill events, and network I/O.
   * In-cluster agents authenticated securely via **EKS Pod Identity** (`CloudWatchAgentServerPolicy`).
+- **Dynamic Persistent Storage (AWS EBS CSI Driver)**:
+  * Managed **AWS EBS CSI Driver Add-on** authenticated via **EKS Pod Identity** (`AmazonEBSCSIDriverPolicy`).
+  * Enables dynamic provisioning of high-performance `gp3` EBS volumes for stateful applications and logging systems (e.g. Elasticsearch).
 
 ## Prerequisites
 
@@ -841,6 +844,21 @@ Open the AWS CloudWatch console in `us-east-1` and navigate to **Insights > Cont
 - Pod network and storage throughput.
 
 Navigate to **Logs > Log groups** to view structured application logs under `/aws/containerinsights/prod-eks-cluster/application`.
+
+## Step 8: Persistent Storage with AWS EBS CSI Driver
+
+The infrastructure includes the managed AWS EBS CSI Driver (`ebs-csi.tf`) integrated via EKS Pod Identity to dynamically provision Amazon EBS volumes for stateful workloads.
+
+### 8.1. Verify EBS CSI Controller Pods
+```bash
+kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver
+```
+
+### 8.2. StorageClass Usage
+Stateful applications (such as Elasticsearch or databases) can dynamically claim persistent disks using the cluster's storage class:
+```bash
+kubectl get sc
+```
 
 ## Managing Team Access
 
