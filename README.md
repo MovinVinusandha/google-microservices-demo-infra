@@ -23,11 +23,12 @@ This infrastructure is built entirely via Infrastructure as Code (Terraform) to 
 | Component | Technology | Purpose |
 | :--- | :--- | :--- |
 | **VPC & Networking** | AWS VPC (3 AZs, 3 NAT Gateways) | Fully private subnets with strict egress control |
-| **Compute Plane** | EKS Auto Mode on Kubernetes 1.36 | Automated worker scaling, OS patching, and ALB integration |
+| **Compute Plane** | EKS Auto Mode on Kubernetes 1.36 | Dual NodePools (`general-purpose` and dedicated `system`) with automated scaling and patching |
 | **Control Plane Security** | AWS KMS CMK Encryption | Envelope encryption for all Kubernetes Secrets |
 | **Identity & IAM** | AWS EKS Pod Identity | Modern credential injection for ExternalDNS, CloudWatch & EBS CSI |
 | **Persistent Storage** | AWS EBS CSI Driver Addon | Dynamic provisioning of gp3 EBS volumes for stateful workloads |
 | **DNS & Ingress** | Route 53 + AWS ACM Wildcard | Automated DNS records via ExternalDNS and SSL termination |
+| **Pod Stability Controls** | Karpenter Disruption Annotations & PDBs | Prevents node consolidation evictions (`karpenter.sh/do-not-disrupt`) and enforces PodDisruptionBudgets |
 
 ---
 
